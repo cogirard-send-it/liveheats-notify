@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveHeats iPhone Notifier</title>
 
-  <!-- PWA manifest under GH Pages subpath -->
-  <link rel="manifest" href="/liveheats-notify/manifest.json?v=11">
-
-  <!-- iOS PWA meta -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=12" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LiveHeats">
   <meta name="theme-color" content="#ffffff">
-
   <style>
     body{font-family:-apple-system,system-ui,Arial,sans-serif;padding:24px}
     label{display:block;margin:16px 0 6px;font-weight:600}
@@ -47,36 +43,31 @@
   <div id="status" class="muted">Ready.</div>
 
   <script>
-    // PUBLIC VAPID key
     const VAPID_PUBLIC_KEY = 'BD278lRSLEagvve9NFAiS-v1kPLLtk-Vv_w42rJIRB44PfxvESM9--BR4UKUkVyo3fC5GQbrJ8hDz2nrX-xMN28';
-
     const $status=document.getElementById('status');
     const $eventId=document.getElementById('event-id');
     const $openEvent=document.getElementById('open-event');
     const $subBox=document.getElementById('sub-json');
 
-    const saved=localStorage.getItem('lh_event_id')||'';
-    if(saved) $eventId.value=saved; updateOpenLink();
-
+    const saved=localStorage.getItem('lh_event_id')||''; if(saved) $eventId.value=saved; updateOpenLink();
     document.getElementById('save-event').onclick=()=>{const v=($eventId.value||'').trim();
       if(!v) return setStatus('Please enter an Event ID.',true);
       localStorage.setItem('lh_event_id',v); updateOpenLink(); setStatus(`Saved Event ID ${v}`,false);};
-
     function updateOpenLink(){const id=($eventId.value||'').trim();
       $openEvent.href=id?`https://liveheats.com/events/${id}/schedule`:'#';
       $openEvent.textContent=id?`Open liveheats.com/events/${id}/schedule`:'Open event page';}
     function setStatus(m,e){$status.classList.toggle('ok',!e);$status.classList.toggle('err',!!e);$status.textContent=m;}
 
-    // Register SW (version bump to bust cache)
+    // Register Service Worker (version bump to bust cache)
     window.addEventListener('load', async () => {
       if(!('serviceWorker' in navigator)) return setStatus('Service workers not supported here.',true);
       try{
-        const reg=await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=10',{scope:'/liveheats-notify/'});
+        const reg=await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=11',{scope:'/liveheats-notify/'});
         setStatus('Service worker ready.',false); window.__swReg=reg;
       }catch{ setStatus('Failed to register service worker.',true); }
     });
 
-    // Enable push
+    // Enable push (must be a user gesture)
     document.getElementById('enable-push').onclick=async()=>{
       try{
         if(!window.__swReg) throw new Error('SW not ready yet');
@@ -91,7 +82,7 @@
       }catch(e){ setStatus('Failed to enable push: '+e.message,true); }
     };
 
-    // Local test
+    // Local visible test
     document.getElementById('test-local').onclick=async()=>{
       if(!window.__swReg) return setStatus('SW not ready.',true);
       const id=localStorage.getItem('lh_event_id')||'—';
@@ -103,7 +94,7 @@
       setStatus('Local notification shown.',false);
     };
 
-    // Show/copy subscription
+    // View/Copy subscription (so we can paste it into the repo)
     document.getElementById('show-sub').onclick=()=>{
       const s=localStorage.getItem('lh_sub');
       if(!s) return setStatus('No subscription found. Tap Enable notifications first.',true);
