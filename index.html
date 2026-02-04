@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LiveHeats Notifier</title>
+  <title>LiveHeats iPhone Notifier</title>
 
   <!-- ✅ REAL manifest link under your GitHub Pages subpath -->
-  <link rel="manifest" href="/liveheats-notify/manifest.json?v=5">
+  /liveheats-notify/manifest.json?v=6
 
   <!-- iOS PWA meta -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,13 +32,12 @@
   <div id="status"></div>
 
   <script>
-    // Helper: append status lines on screen for easy debugging on iPhone
     function log(line, cls = '') {
       const el = document.getElementById('status');
-      const span = document.createElement('div');
-      if (cls) span.className = cls;
-      span.textContent = line;
-      el.appendChild(span);
+      const div = document.createElement('div');
+      if (cls) div.className = cls;
+      div.textContent = line;
+      el.appendChild(div);
       console.log(line);
     }
 
@@ -57,8 +56,8 @@
         return null;
       }
       try {
-        // Register SW under the repo subpath with a cache-busting query
-        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=5', {
+        // Make sure the path AND scope match your GitHub Pages subfolder
+        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=6', {
           scope: '/liveheats-notify/'
         });
         log('SW registered');
@@ -88,10 +87,11 @@
           return;
         }
 
-        // Your PUBLIC VAPID KEY (from your last message)
+        // Your PUBLIC VAPID KEY:
         const PUBLIC_VAPID_KEY = 'BD8LRWjR5B2Act8otJlkgVP3orYr82YNO_abU79qidkccM02nb7XLr3lcSAI7km6di62bMdNJBFFz2OFZktW9ok';
         const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
 
+        // Avoid duplicate subscriptions
         const existing = await reg.pushManager.getSubscription();
         if (existing) {
           log('Already subscribed', 'ok');
@@ -106,7 +106,6 @@
 
         log('Subscribed! (backend wiring next)', 'ok');
         console.log('Push subscription:', JSON.stringify(sub));
-        // TODO: send `sub` to your backend in the next step
       } catch (err) {
         console.error(err);
         log('Subscription failed: ' + (err && err.message ? err.message : err), 'err');
