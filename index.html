@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveHeats iPhone Notifier</title>
 
-  <!-- PWA manifest -->
+  <!-- PWA manifest (GitHub Pages under /liveheats-notify/) -->
   <link rel="manifest" href="/liveheats-notify/manifest.json?v=13" />
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,26 +14,111 @@
   <meta name="theme-color" content="#ffffff">
 
   <style>
-    body {
-      font-family: -apple-system, system-ui, Arial, sans-serif;
-      padding: 24px;
+    :root { color-scheme: light dark; }
+    body { font-family:-apple-system, system-ui, Arial, sans-serif; padding:24px; }
+    #diag {
+      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #eef6ff; color:#0b3b85; border:1px solid #cde3ff;
+      padding:10px; border-radius:8px; margin-bottom:12px; white-space:pre-wrap;
     }
-    label { display: block; margin: 16px 0 6px; font-weight: 600; }
-    input[type="text"] {
-      width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box;
-    }
-    button {
-      padding: 10px 14px; font-size: 16px; margin-right: 8px; margin-top: 10px;
-    }
-    #status { margin-top: 18px; font-weight: 600; white-space: pre-line; }
-    .muted { color: #666; font-size: 14px; }
-    .ok { color: #0a7a0a; }
-    .err { color: #b00020; }
+    label { display:block; margin:16px 0 6px; font-weight:600; }
+    input[type="text"] { width:100%; padding:10px; font-size:16px; box-sizing:border-box; }
+    button { padding:10px 14px; font-size:16px; margin-right:8px; margin-top:10px; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    #status { margin-top:18px; font-weight:600; white-space:pre-line; }
+    .muted { color:#666; font-size:14px; }
+    .ok { color:#0a7a0a; }
+    .err { color:#b00020; }
     pre {
-      white-space: pre-wrap; word-break: break-all;
-      background: #f6f8fa; padding: 8px; border-radius: 6px;
-      display: none;
+      white-space:pre-wrap; word-break:break-all; background:#f6f8fa;
+      padding:8px; border-radius:6px; display:none;
     }
+  </style>
+</head>
+
+<body>
+  <div id="diag">Loading diagnostics…</div>
+
+  <h2>LiveHeats iPhone Notifier</h2>
+  <p class="muted">
+    Install this app to your <strong>iPhone Home Screen</strong> (Share → Add to Home Screen).  
+    Web Push works only from the installed PWA, not from a Safari tab on iOS.
+  </p>
+
+  <!-- Event ID -->
+  <label for="event-id">Event ID</label>
+  <input id="event-id" type="text" inputmode="numeric" placeholder="e.g., 468713" />
+
+  <div>
+    <button id="save-event">Save event</button>
+    <a id="open-event" target="_blank" rel="noopener">Open event page</a>
+  </div>
+
+  <!-- Notifications -->
+  <label>Notifications</label>
+  <div>
+    <button id="enable-push" disabled>Enable notifications</button>
+    <button id="test-local" disabled>Test local notification</button>
+    <button id="show-sub" disabled>Show subscription</button>
+    <button id="copy-sub" disabled>Copy</button>
+  </div>
+
+  <pre id="sub-json"></pre>
+  <div id="status" class="muted">Booting…</div>
+
+  <script>
+    // 🔐 Your VAPID public key (Base64URL)
+    const VAPID_PUBLIC_KEY =
+      "BFeoeR2lmssJq5k8_wPuC1FJEk0OWZnwqDWksnzsR200b0BAPZoXdswK02ryxAhgDInbyifNnP1mHM5mAOhJ1UI";
+
+    // Element refs
+    const $diag = document.getElementById("diag");
+    const $status = document.getElementById("status");
+    const $eventId = document.getElementById("event-id");
+    const $openEvent = document.getElementById("open-event");
+    const $subBox = document.getElementById("sub-json");
+    const $btnEnable = document.getElementById("enable-push");
+    const $btnTest   = document.getElementById("test-local");
+    const $btnShow   = document.getElementById("show-sub");
+    const $btnCopy   = document.getElementById("copy-sub");
+
+    // Restore saved Event ID
+    const saved = localStorage.getItem("lh_event_id") || "";
+    if (saved) $eventId.value = saved;
+    updateOpenLink();
+
+    document.getElementById("save-event").onclick = () => {
+      const v = ($eventId.value || "").trim();
+      if (!v) return setStatus("Please enter an Event ID.", true);
+      localStorage.setItem("lh_event_id", v);
+      updateOpenLink();
+      setStatus(`Saved Event ID ${v}`, false);
+    };
+
+    function updateOpenLink() {
+      const id = ($eventId.value || "").trim();
+      $openEvent.href = id ? `https://liveheats.com/events/${id}/schedule` : "#";
+      $openEvent.textContent = id
+        ? `Open liveheats.com/events/${id}/schedule`
+        : "Open event page";
+    }
+
+    function setStatus(msg, isErr) {
+      $status.classList.toggle("ok", !isErr);
+      $status.classList.toggle("err", !!isErr);
+      $status.textContent = msg;
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      return outputArray;
+    }
+
+    function isIOSStandalone() {
   </style>
 </head>
 
