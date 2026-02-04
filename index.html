@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveHeats Notifier</title>
 
-  <!-- Manifest must point to your GitHub Pages subpath -->
-  <link rel="manifest" href="/liveheats-notify/manifest.json?v=4" />
+  <!-- ✅ REAL manifest link under your GitHub Pages subpath -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=5">
 
   <!-- iOS PWA meta -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +17,7 @@
   <style>
     body { font-family: -apple-system, system-ui, Arial, sans-serif; padding: 24px; }
     button { padding: 10px 16px; font-size: 16px; }
-    #status { margin-top: 16px; font-weight: 600; }
+    #status { margin-top: 16px; font-weight: 600; white-space: pre-line; }
     .muted { color: #666; font-size: 14px; }
     .ok { color: #0a7a0a; }
     .err { color: #b00020; }
@@ -25,13 +26,22 @@
 
 <body>
   <h2>LiveHeats iPhone Notifier</h2>
-  <p class="muted">Open this from your <strong>iPhone Home Screen</strong> (not a Safari tab), then tap the button.</p>
+  <p class="muted">Open from your <strong>iPhone Home Screen</strong> (not a Safari tab), then tap the button.</p>
 
   <button id="btn-sub">Enable Notifications</button>
   <div id="status"></div>
 
   <script>
-    // Convert URL-safe Base64 public key to Uint8Array (required by Push API)
+    // Helper: append status lines on screen for easy debugging on iPhone
+    function log(line, cls = '') {
+      const el = document.getElementById('status');
+      const span = document.createElement('div');
+      if (cls) span.className = cls;
+      span.textContent = line;
+      el.appendChild(span);
+      console.log(line);
+    }
+
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
       const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -43,32 +53,67 @@
 
     async function ensureServiceWorker() {
       if (!('serviceWorker' in navigator)) {
-        document.getElementById('status').innerHTML = '<span class="err">Service Worker not supported</span>';
+        log('Service Worker not supported', 'err');
         return null;
       }
       try {
-        // Register under /liveheats-notify/ so the scope matches GitHub Pages subpath
-        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=4', {
+        // Register SW under the repo subpath with a cache-busting query
+        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=5', {
           scope: '/liveheats-notify/'
         });
+        log('SW registered');
         return reg;
       } catch (e) {
-        console.error('SW register failed', e);
-        document.getElementById('status').innerHTML = '<span class="err">SW registration failed</span>';
+        console.error(e);
+        log('SW registration failed: ' + (e && e.message ? e.message : e), 'err');
         return null;
       }
     }
 
     async function subscribe() {
       try {
+        if (!window.isSecureContext) {
+          log('This page is not in a secure context (https required)', 'err');
+          return;
+        }
+        log('Starting subscribe flow...');
+
         const reg = await ensureServiceWorker();
         if (!reg) return;
 
-        // iOS requires a user gesture before showing the permission prompt
         const permission = await Notification.requestPermission();
+        log('Permission result: ' + permission);
         if (permission !== 'granted') {
-          document.getElementById('status').innerHTML = '<span class="err">Notifications not granted</span>';
+          log('Notifications not granted', 'err');
           return;
         }
 
-        // Your PUBLIC VAPID KEY
+        // Your PUBLIC VAPID KEY (from your last message)
+        const PUBLIC_VAPID_KEY = 'BD8LRWjR5B2Act8otJlkgVP3orYr82YNO_abU79qidkccM02nb7XLr3lcSAI7km6di62bMdNJBFFz2OFZktW9ok';
+        const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
+
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+          log('Already subscribed', 'ok');
+          console.log('Existing subscription:', JSON.stringify(existing));
+          return;
+        }
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+
+        log('Subscribed! (backend wiring next)', 'ok');
+        console.log('Push subscription:', JSON.stringify(sub));
+        // TODO: send `sub` to your backend in the next step
+      } catch (err) {
+        console.error(err);
+        log('Subscription failed: ' + (err && err.message ? err.message : err), 'err');
+      }
+    }
+
+    document.getElementById('btn-sub').addEventListener('click', subscribe);
+  </script>
+</body>
+</html>
