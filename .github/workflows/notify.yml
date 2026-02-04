@@ -7,9 +7,7 @@ on:
         description: "Choose run mode"
         required: true
         type: choice
-        options:
-          - send-once
-          - looped-updates
+        options: [send-once, looped-updates]
         default: send-once
       event_id:
         description: "LiveHeats event ID"
@@ -30,15 +28,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
+        with: { node-version: 20 }
       - name: Install deps
         run: npm ci || npm i
-
       - name: Send push once
         env:
           VAPID_SUBJECT: "mailto:you@example.com"
@@ -52,20 +46,16 @@ jobs:
   looped-updates:
     if: ${{ inputs.mode == 'looped-updates' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 190   # ~3h 10m safety cap (runner max is 6h)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
+        with: { node-version: 20 }
       - name: Install deps
         run: npm ci || npm i
-
-      - name: Loop send every 30s
+      - name: Loop send every 30s (~3h)
         env:
           VAPID_SUBJECT: "mailto:you@example.com"
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
@@ -75,11 +65,12 @@ jobs:
           SUBSCRIPTIONS_FILE: "data/subscriptions.json"
         run: |
           START=$(date +%s)
-          DURATION=$((25*60))
+          DURATION=$((3*60*60)) # 3 hours
           while true; do
-            echo "=== sending ==="
+            echo "=== $(date -u) :: sending ==="
             node notifier/notify.js || echo "notify.js error"
             sleep 30
             NOW=$(date +%s)
             [ $((NOW-START)) -ge $DURATION ] && break
           done
+          echo "=== done after $((NOW-START))s ==="
