@@ -1,0 +1,14 @@
+{
+  "name": "liveheats-notify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "LiveHeats web-push sender for GitHub Actions",
+  "scripts": {
+    "notify": "node notifier/notify.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "web-push": "^3.6.7"
+  }
+}
