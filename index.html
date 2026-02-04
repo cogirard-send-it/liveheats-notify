@@ -4,50 +4,76 @@
   <meta charset="UTF-8" />
   <title>LiveHeats Notifier</title>
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
+  <!-- Link the manifest at the correct subpath on GitHub Pages -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=2">
 
-  <!-- Required for iOS PWA -->
+  <!-- PWA / iOS meta -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LiveHeats">
+  <meta name="theme-color" content="#ffffff">
+
+  <style>
+    body { font-family: -apple-system, system-ui, Arial, sans-serif; padding: 24px; }
+    button { padding: 10px 16px; font-size: 16px; }
+    #status { margin-top: 16px; font-weight: 600; }
+  </style>
+</head>
+
+<body>
+  <h2>LiveHeats iPhone Notifier</h2>
+  <p>Open this app from your Home Screen and tap the button to enable notifications.</p>
+
+  <button id="btn-sub">Enable Notifications</button>
+  <div id="status"></div>
 
   <script>
+    // Always register the SW with the correct scope for GitHub Pages subfolder
+    async function ensureServiceWorker() {
+      if (!('serviceWorker' in navigator)) {
+        document.getElementById('status').innerText = 'Service Worker not supported';
+        return null;
+      }
+      try {
+        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js', { scope: '/liveheats-notify/' });
+        return reg;
+      } catch (e) {
+        console.error('SW register failed', e);
+        document.getElementById('status').innerText = 'SW registration failed';
+        return null;
+      }
+    }
+
     async function subscribe() {
       try {
-        const registration = await navigator.serviceWorker.register("service-worker.js");
+        const reg = await ensureServiceWorker();
+        if (!reg) return;
 
+        // iOS requires a user gesture before showing the permission prompt
         const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          alert("Notifications were not granted.");
+        if (permission !== 'granted') {
+          document.getElementById('status').innerText = 'Notifications not granted';
           return;
         }
 
-        const sub = await registration.pushManager.subscribe({
+        // TODO: replace with your real VAPID key after Step 9
+        const applicationServerKey = 'YOUR_PUBLIC_VAPID_KEY';
+        const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: "YOUR_PUBLIC_VAPID_KEY"
+          applicationServerKey
         });
 
-        // TODO: send subscription to your backend (we do this later)
-        console.log("SUBSCRIPTION:", JSON.stringify(sub));
-        document.getElementById("status").innerText = "Subscribed!";
+        // TODO: send `sub` to your backend (we’ll do this after Step 9)
+        console.log('Push subscription:', JSON.stringify(sub));
+        document.getElementById('status').innerText = 'Subscribed! (check console for details)';
       } catch (err) {
         console.error(err);
-        alert("Subscription failed - check console");
+        document.getElementById('status').innerText = 'Subscription failed (see console)';
       }
     }
+
+    document.getElementById('btn-sub').addEventListener('click', subscribe);
   </script>
-</head>
-
-<body style="font-family: sans-serif; padding: 20px;">
-  <h2>LiveHeats iPhone Notifier</h2>
-  <p>Tap the button below to enable notifications.</p>
-
-  <button onclick="subscribe()" style="padding: 10px 20px; font-size: 16px;">
-    Enable Notifications
-  </button>
-
-  <p id="status" style="margin-top: 20px; font-weight: bold;"></p>
 </body>
 </html>
 ``
