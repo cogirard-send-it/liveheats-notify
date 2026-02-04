@@ -1,3 +1,10 @@
 [
-  PASTE_THE_SUBSCRIPTION_OBJECT_HERE
+  {
+    "endpoint": "https://web.push.apple.com/…", 
+    "expirationTime": null,
+    "keys": {
+      "p256dh": "B…",
+      "auth": "2eW1GW…"
+    }
+  }
 ]
