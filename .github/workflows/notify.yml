@@ -1,0 +1,89 @@
+name: LiveHeats Notify
+
+on:
+  # Manual "Run workflow" button in Actions tab
+  workflow_dispatch:
+    inputs:
+      event_id:
+        description: "LiveHeats event ID (e.g. 470198)"
+        required: true
+        type: string
+      message:
+        description: "Optional override message"
+        required: false
+        type: string
+
+  # Native scheduler (FYI: GitHub's minimum is every 5 minutes)
+  # Uncomment if you want a heartbeat every 5 min as a fallback
+  # schedule:
+  #   - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  # Job 1: single send right now (manual dispatch)
+  send-once:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+        # If you don't have package.json yet, use:
+        # run: npm i web-push node-fetch@2
+
+      - name: Send push once
+        env:
+          VAPID_SUBJECT: "mailto:you@example.com"
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          EVENT_ID: ${{ inputs.event_id }}
+          MESSAGE_OVERRIDE: ${{ inputs.message }}
+          SUBSCRIPTIONS_FILE: "data/subscriptions.json"
+        run: node notifier/notify.js
+
+  # Job 2: looped sender (≈30-second interval) up to a chosen duration
+  looped-updates:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    # Job time cap (can be up to 6 hours on GitHub-hosted runners)
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci || npm i web-push node-fetch@2
+
+      - name: Loop send every ~30s for 25 minutes
+        env:
+          VAPID_SUBJECT: "mailto:you@example.com"
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          EVENT_ID: ${{ inputs.event_id }}
+          MESSAGE_OVERRIDE: ${{ inputs.message }}
+          SUBSCRIPTIONS_FILE: "data/subscriptions.json"
+        run: |
+          START=$(date +%s)
+          DURATION=$((25*60)) # run ~25 minutes
+          while true; do
+            echo "== $(date -u) :: sending update =="
+            node notifier/notify.js || echo "[warn] notify.js returned non-zero"
+            # ~30-second cadence
+            sleep 30
+            NOW=$(date +%s)
+            ELAPSED=$((NOW-START))
+            if [ "$ELAPSED" -ge "$DURATION" ]; then
+              echo "== done after $ELAPSED s =="
+              break
+            fi
+          done
