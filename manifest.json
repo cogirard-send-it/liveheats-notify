@@ -1,9 +1,11 @@
 {
   "name": "LiveHeats Notifier",
   "short_name": "LiveHeats",
-  "start_url": "/",
+  "start_url": "/liveheats-notify/",
+  "scope": "/liveheats-notify/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": []
 }
+``
