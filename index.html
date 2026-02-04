@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveHeats iPhone Notifier</title>
 
-  <!-- ✅ REAL manifest link under your GitHub Pages subpath -->
-  /liveheats-notify/manifest.json?v=6
+  <!-- Real manifest link under your GitHub Pages subpath -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=7" />
 
   <!-- iOS PWA meta -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,103 +16,23 @@
 
   <style>
     body { font-family: -apple-system, system-ui, Arial, sans-serif; padding: 24px; }
-    button { padding: 10px 16px; font-size: 16px; }
-    #status { margin-top: 16px; font-weight: 600; white-space: pre-line; }
+    label { display: block; margin: 16px 0 6px; font-weight: 600; }
+    input[type="text"] { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+    button { padding: 10px 14px; font-size: 16px; margin-right: 8px; margin-top: 10px; }
+    #status { margin-top: 18px; font-weight: 600; white-space: pre-line; }
     .muted { color: #666; font-size: 14px; }
     .ok { color: #0a7a0a; }
     .err { color: #b00020; }
+    .row { margin-top: 8px; }
   </style>
 </head>
 
 <body>
   <h2>LiveHeats iPhone Notifier</h2>
-  <p class="muted">Open from your <strong>iPhone Home Screen</strong> (not a Safari tab), then tap the button.</p>
+  <p class="muted">Open from your <strong>iPhone Home Screen</strong> (not a Safari tab). Then set the event and enable notifications.</p>
 
-  <button id="btn-sub">Enable Notifications</button>
-  <div id="status"></div>
+  <!-- Event configuration (local to this device) -->
+  <label for="event-id">Event ID</label>
+  <input id="event-id" type="text" inputmode="numeric" placeholder="e.g., 470198" />
 
-  <script>
-    function log(line, cls = '') {
-      const el = document.getElementById('status');
-      const div = document.createElement('div');
-      if (cls) div.className = cls;
-      div.textContent = line;
-      el.appendChild(div);
-      console.log(line);
-    }
-
-    function urlBase64ToUint8Array(base64String) {
-      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-      const rawData = atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-      return outputArray;
-    }
-
-    async function ensureServiceWorker() {
-      if (!('serviceWorker' in navigator)) {
-        log('Service Worker not supported', 'err');
-        return null;
-      }
-      try {
-        // Make sure the path AND scope match your GitHub Pages subfolder
-        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=6', {
-          scope: '/liveheats-notify/'
-        });
-        log('SW registered');
-        return reg;
-      } catch (e) {
-        console.error(e);
-        log('SW registration failed: ' + (e && e.message ? e.message : e), 'err');
-        return null;
-      }
-    }
-
-    async function subscribe() {
-      try {
-        if (!window.isSecureContext) {
-          log('This page is not in a secure context (https required)', 'err');
-          return;
-        }
-        log('Starting subscribe flow...');
-
-        const reg = await ensureServiceWorker();
-        if (!reg) return;
-
-        const permission = await Notification.requestPermission();
-        log('Permission result: ' + permission);
-        if (permission !== 'granted') {
-          log('Notifications not granted', 'err');
-          return;
-        }
-
-        // Your PUBLIC VAPID KEY:
-        const PUBLIC_VAPID_KEY = 'BD8LRWjR5B2Act8otJlkgVP3orYr82YNO_abU79qidkccM02nb7XLr3lcSAI7km6di62bMdNJBFFz2OFZktW9ok';
-        const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
-
-        // Avoid duplicate subscriptions
-        const existing = await reg.pushManager.getSubscription();
-        if (existing) {
-          log('Already subscribed', 'ok');
-          console.log('Existing subscription:', JSON.stringify(existing));
-          return;
-        }
-
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey
-        });
-
-        log('Subscribed! (backend wiring next)', 'ok');
-        console.log('Push subscription:', JSON.stringify(sub));
-      } catch (err) {
-        console.error(err);
-        log('Subscription failed: ' + (err && err.message ? err.message : err), 'err');
-      }
-    }
-
-    document.getElementById('btn-sub').addEventListener('click', subscribe);
-  </script>
-</body>
-</html>
+  <div class="row">
