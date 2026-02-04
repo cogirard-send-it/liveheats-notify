@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveHeats iPhone Notifier</title>
 
-  <!-- PWA manifest (GitHub Pages under /liveheats-notify/) -->
-  <link rel="manifest" href="/liveheats-notify/manifest.json?v=13" />
+  <!-- Correct PWA manifest link (GitHub Pages under /liveheats-notify/) -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=13">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -30,38 +30,6 @@
     .ok { color:#0a7a0a; }
     .err { color:#b00020; }
     pre {
-      white-space:pre-wrap; word-break:break-all; background:#f6f8fa;
-      padding:8px; border-radius:6px; display:none;
-    }
-  </style>
-</head>
-
-<body>
-  <div id="diag">Loading diagnostics…</div>
-
-  <h2>LiveHeats iPhone Notifier</h2>
-  <p class="muted">
-    Install this app to your <strong>iPhone Home Screen</strong> (Share → Add to Home Screen).  
-    Web Push works only from the installed PWA, not from a Safari tab on iOS.
-  </p>
-
-  <!-- Event ID -->
-  <label for="event-id">Event ID</label>
-  <input id="event-id" type="text" inputmode="numeric" placeholder="e.g., 468713" />
-
-  <div>
-    <button id="save-event">Save event</button>
-    <a id="open-event" target="_blank" rel="noopener">Open event page</a>
-  </div>
-
-  <!-- Notifications -->
-  <label>Notifications</label>
-  <div>
-    <button id="enable-push" disabled>Enable notifications</button>
-    <button id="test-local" disabled>Test local notification</button>
-    <button id="show-sub" disabled>Show subscription</button>
-    <button id="copy-sub" disabled>Copy</button>
-  </div>
 
   <pre id="sub-json"></pre>
   <div id="status" class="muted">Booting…</div>
