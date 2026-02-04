@@ -28,8 +28,11 @@ jobs:
     if: ${{ inputs.mode == 'send-once' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -51,8 +54,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -77,4 +83,3 @@ jobs:
             NOW=$(date +%s)
             [ $((NOW-START)) -ge $DURATION ] && break
           done
-``
