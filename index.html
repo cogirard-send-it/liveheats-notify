@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <title>LiveHeats Notifier</title>
 
-  <!-- Link the manifest at the correct subpath on GitHub Pages -->
-  <link rel="manifest" href="/liveheats-notify/manifest.json?v=2">
+  <!-- Manifest must point to your GitHub Pages subpath -->
+  <link rel="manifest" href="/liveheats-notify/manifest.json?v=4" />
 
-  <!-- PWA / iOS meta -->
+  <!-- iOS PWA meta -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LiveHeats">
@@ -17,29 +17,44 @@
     body { font-family: -apple-system, system-ui, Arial, sans-serif; padding: 24px; }
     button { padding: 10px 16px; font-size: 16px; }
     #status { margin-top: 16px; font-weight: 600; }
+    .muted { color: #666; font-size: 14px; }
+    .ok { color: #0a7a0a; }
+    .err { color: #b00020; }
   </style>
 </head>
 
 <body>
   <h2>LiveHeats iPhone Notifier</h2>
-  <p>Open this app from your Home Screen and tap the button to enable notifications.</p>
+  <p class="muted">Open this from your <strong>iPhone Home Screen</strong> (not a Safari tab), then tap the button.</p>
 
   <button id="btn-sub">Enable Notifications</button>
   <div id="status"></div>
 
   <script>
-    // Always register the SW with the correct scope for GitHub Pages subfolder
+    // Convert URL-safe Base64 public key to Uint8Array (required by Push API)
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      return outputArray;
+    }
+
     async function ensureServiceWorker() {
       if (!('serviceWorker' in navigator)) {
-        document.getElementById('status').innerText = 'Service Worker not supported';
+        document.getElementById('status').innerHTML = '<span class="err">Service Worker not supported</span>';
         return null;
       }
       try {
-        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js', { scope: '/liveheats-notify/' });
+        // Register under /liveheats-notify/ so the scope matches GitHub Pages subpath
+        const reg = await navigator.serviceWorker.register('/liveheats-notify/service-worker.js?v=4', {
+          scope: '/liveheats-notify/'
+        });
         return reg;
       } catch (e) {
         console.error('SW register failed', e);
-        document.getElementById('status').innerText = 'SW registration failed';
+        document.getElementById('status').innerHTML = '<span class="err">SW registration failed</span>';
         return null;
       }
     }
@@ -52,28 +67,8 @@
         // iOS requires a user gesture before showing the permission prompt
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          document.getElementById('status').innerText = 'Notifications not granted';
+          document.getElementById('status').innerHTML = '<span class="err">Notifications not granted</span>';
           return;
         }
 
-        // TODO: replace with your real VAPID key after Step 9
-        const applicationServerKey = 'YOUR_PUBLIC_VAPID_KEY';
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey
-        });
-
-        // TODO: send `sub` to your backend (we’ll do this after Step 9)
-        console.log('Push subscription:', JSON.stringify(sub));
-        document.getElementById('status').innerText = 'Subscribed! (check console for details)';
-      } catch (err) {
-        console.error(err);
-        document.getElementById('status').innerText = 'Subscription failed (see console)';
-      }
-    }
-
-    document.getElementById('btn-sub').addEventListener('click', subscribe);
-  </script>
-</body>
-</html>
-``
+        // Your PUBLIC VAPID KEY
